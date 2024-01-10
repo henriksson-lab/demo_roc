@@ -103,6 +103,7 @@ tab_statdist <- fluidPage(
     ),
     column(6,
            
+           h3("Decision boundary"),
            
            sliderInput(
              inputId = "class_a_to",
@@ -113,6 +114,7 @@ tab_statdist <- fluidPage(
              step=0.01
            ),
            
+           h3("Classifier performance"),
            
            plotOutput(outputId = "plotROC", height = "400px"),
            plotOutput(outputId = "plotPR", height = "400px"),
