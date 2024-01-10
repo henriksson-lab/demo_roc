@@ -90,7 +90,7 @@ tab_statdist <- fluidPage(
                  label = "#Samples:",
                  min=1,
                  max=1000,
-                 value=500,
+                 value=200,
                  step=1
                ),
                

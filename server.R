@@ -28,10 +28,6 @@ server <- function(input, output, session) {
   ##############################################################################
 
   observe({
-    #from <- min(input$show_minx,input$show_maxx) 
-    #to <- max(input$show_minx,input$show_maxx) 
-    #updateSliderInput(session,"int_from", min = from, max=to)
-    #updateSliderInput(session,"int_to", min = from, max=to)
   })
   
     
@@ -41,9 +37,12 @@ server <- function(input, output, session) {
   
   
   
-  getSamples <- function(){
+  
+  getSamples <- reactive({
     set.seed(666)
     num_samples <- input$num_samples
+    
+    ################ Generate random points and classify them
     
     dat <- data.frame(
       x_a=rnorm(num_samples, input$normal_mu_a, input$normal_sigma_a),
@@ -63,14 +62,13 @@ server <- function(input, output, session) {
     dat$predicted_class <- factor(dat$predicted_class, levels=c("a","b"))
     
     
-    ################ Add classification info ###############
+    ################ Add classification info
     
-    dat$precision <- NA
-    dat$sensitivity <- NA
-    dat$false_positive_rate <- NA
-    dat$recall <- NA
-    dat$accuracy <- NA
-    
+    dat$TN <- NA
+    dat$TP <- NA
+    dat$FP <- NA
+    dat$FN <- NA
+
     #to begin with, starting from decision boundaries at the left, all samples are categorized as b. so none as a:
     CM <- matrix(nrow=2,ncol=2)
     colnames(CM) <- c("a","b")
@@ -94,63 +92,59 @@ server <- function(input, output, session) {
       }
       #      print(CM)     
       
-      TN <- CM[1,1]
-      TP <- CM[2,2]
-      FP <- CM[1,2]
-      FN <- CM[2,1]
-      
-      # b is positive
-      # a is negative
-      # false positive: a classified as b  #[,]
-      # false negative: b classified as a
-      
-      dat$sensitivity[i] <- (TP)/(TP+FN)  
-      if(TP==0){
-        dat$sensitivity[i] <- 0
-      }
-      
-      dat$precision[i] <- (TP)/(TP+FP)  
-      dat$false_positive_rate[i] <- (FP)/(FP+TN)
-      dat$recall[i] <- (FP)/(FP+TN)
-      #f1_score <- 2*((precision*recall_score)/(precision+recall_score))
-      dat$accuracy[i]  <- (TP+TN)/(TP+TN+FP+FN)
-      #False_negative_rate <- (FN)/(FN+TP)
-    }
-    #    print(s[,c("false_positive_rate", "sensitivity")])
-    
-    
-    
-    #print(dat)
-    dat
+      dat$TN[i] <- CM[1,1]
+      dat$TP[i] <- CM[2,2]
+      dat$FP[i] <- CM[1,2]
+      dat$FN[i] <- CM[2,1]
 
+    }
+
+    # b is positive
+    # a is negative
+    # false positive: a classified as b  #[,]
+    # false negative: b classified as a
+    
+    dat$sensitivity <- dat$TP/(dat$TP+dat$FN)  
+    dat$precision <- dat$TP/(dat$TP+dat$FP)  
+    dat$false_positive_rate <- dat$FP/(dat$FP+dat$TN)
+    dat$recall <- dat$FP/(dat$FP+dat$TN)
+    #f1_score <- 2*((precision*recall_score)/(precision+recall_score))
+    dat$accuracy  <- (dat$TP+dat$TN)/(dat$TP+dat$TN+dat$FP+dat$FN)    
+
+    dat
+  })
+  
+
+  
+  divNoZero <- function(a,b){
+    if(a==0){
+      return(0)
+    } else {
+      return(a/b)
+    }
   }
   
-
   
-  
-  getCurrentSetting <- function(){
+  ######## Figure out current sensitivity etc
+  getCurrentSetting <- reactive({
     dat <- getSamples()
     
-    ######## Figure out current setting
     CM <- table(dat$class, dat$predicted_class)
     TN <- CM[1,1]
     TP <- CM[2,2]
     FP <- CM[1,2]
     FN <- CM[2,1]
     cur_setting <- data.frame(sensitivity=NA, false_positive_rate=NA)
-    cur_setting$sensitivity <- (TP)/(TP+FN)  
-    if(TP==0){
-      cur_setting$sensitivity <- 0
-    }
-    cur_setting$false_positive_rate <- (FP)/(FP+TN)
     
-    cur_setting$precision <- (TP)/(TP+FP)  
-    cur_setting$recall <- (FP)/(FP+TN)
+    cur_setting$sensitivity <- divNoZero(TP,TP+FN)  
+    cur_setting$false_positive_rate <- divNoZero(FP,FP+TN)
+    cur_setting$precision <- divNoZero(TP,TP+FP)  
+    cur_setting$recall <- divNoZero(FP,FP+TN)
     
     cur_setting
-  }
+  })
   
-
+  
   
   ##############################################################################
   ########### Plot distributions ###############################################
@@ -239,10 +233,7 @@ server <- function(input, output, session) {
     
     ref <- data.frame(recall=c(1,0), precision=c(0,1), false_positive_rate=c(0,1), sensitivity=c(0,1))
     cur_setting <- getCurrentSetting()
-    
-    print(head(dat))
-    print(cur_setting)
-    
+
     ggplot(dat, aes(recall, precision)) + geom_line() + 
       geom_line(data=ref, color="red") + 
       geom_point(data=cur_setting, color="red", size=5)
@@ -250,9 +241,6 @@ server <- function(input, output, session) {
   
   
   
-  if(FALSE){
-    getRoc()
-  }
   
 }
 
