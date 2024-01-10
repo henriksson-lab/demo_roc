@@ -90,7 +90,7 @@ tab_statdist <- fluidPage(
                  label = "#Samples:",
                  min=1,
                  max=1000,
-                 value=100,
+                 value=500,
                  step=1
                ),
                
@@ -114,7 +114,8 @@ tab_statdist <- fluidPage(
            ),
            
            
-           plotOutput(outputId = "plotROC", height = "200px"),
+           plotOutput(outputId = "plotROC", height = "400px"),
+           plotOutput(outputId = "plotPR", height = "400px"),
            
            
     ),

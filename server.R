@@ -59,62 +59,31 @@ server <- function(input, output, session) {
     
     dat <- dat[order(dat$x),]
     
-    print(dat)
-    dat
+    dat$class <- factor(dat$class, levels=c("a","b"))
+    dat$predicted_class <- factor(dat$predicted_class, levels=c("a","b"))
     
     
+    ################ Add classification info ###############
     
-  }
-  
-  
-  
-  
-  # modified from https://www.digitalocean.com/community/tutorials/plot-roc-curve-r-programming
-  err_metric <- function(CM){
-    TN <- CM[1,1]
-    TP <- CM[2,2]
-    FP <- CM[1,2]
-    FN <- CM[2,1]
-    precision <- (TP)/(TP+FP)
-    recall_score <- (FP)/(FP+TN)
-    f1_score <- 2*((precision*recall_score)/(precision+recall_score))
-    accuracy_model  <- (TP+TN)/(TP+TN+FP+FN)
-    False_positive_rate <- (FP)/(FP+TN)
-    False_negative_rate <- (FN)/(FN+TP)
+    dat$precision <- NA
+    dat$sensitivity <- NA
+    dat$false_positive_rate <- NA
+    dat$recall <- NA
+    dat$accuracy <- NA
     
-    print(paste("Precision value of the model: ",round(precision,2)))
-    print(paste("Accuracy of the model: ",round(accuracy_model,2)))
-    print(paste("Recall value of the model: ",round(recall_score,2)))
-    print(paste("False Positive rate of the model: ",round(False_positive_rate,2)))
-    print(paste("False Negative rate of the model: ",round(False_negative_rate,2)))
-    print(paste("f1 score of the model: ",round(f1_score,2)))
-  }
-  
-  # roc x: false positive rate = 
-  # roc y: true positive rate = sensitivity
-  
-  getRoc <- function(){
-    
-    s <- getSamples()#[1:5,]
-    
+    #to begin with, starting from decision boundaries at the left, all samples are categorized as b. so none as a:
     CM <- matrix(nrow=2,ncol=2)
     colnames(CM) <- c("a","b")
     colnames(CM) <- c("a","b")
-    
-    #to begin with, starting from decision boundaries at the left, all samples are categorized as b. so none as a:
     CM[1,1] <- 0
     CM[2,1] <- 0
-    CM[1,2] <- sum(s$class=="a")
-    CM[2,2] <- sum(s$class=="b")  # column 2 means classified as b. so [1,2] is a classified as b
-    
-    s$precision <- NA
-    s$sensitivity <- NA
-    s$false_positive_rate <- NA
+    CM[1,2] <- sum(dat$class=="a")
+    CM[2,2] <- sum(dat$class=="b")  # column 2 means classified as b. so [1,2] is a classified as b
     
     #Now moving from left to right
-#    print(CM)        #should also add this as output!!
-    for(i in 1:nrow(s)){
-      if(s$class[i]=="a"){
+    #    print(CM)        #should also add this as output!!
+    for(i in 1:nrow(dat)){
+      if(dat$class[i]=="a"){
         #now one missclassified a is done right
         CM[1,2] <- CM[1,2] - 1
         CM[1,1] <- CM[1,1] + 1
@@ -123,7 +92,7 @@ server <- function(input, output, session) {
         CM[2,2] <- CM[2,2] - 1
         CM[2,1] <- CM[2,1] + 1
       }
-#      print(CM)     
+      #      print(CM)     
       
       TN <- CM[1,1]
       TP <- CM[2,2]
@@ -135,32 +104,35 @@ server <- function(input, output, session) {
       # false positive: a classified as b  #[,]
       # false negative: b classified as a
       
-#      FN <- CM[1,2]
- #     FP <- CM[2,1]
-      
-      s$sensitivity[i] <- (TP)/(TP+FN)  
+      dat$sensitivity[i] <- (TP)/(TP+FN)  
       if(TP==0){
-        s$sensitivity[i] <- 0
+        dat$sensitivity[i] <- 0
       }
       
-      s$precision[i] <- (TP)/(TP+FP)  
-      s$false_positive_rate[i] <- (FP)/(FP+TN)
-      
-      
-      #recall_score <- (FP)/(FP+TN)
+      dat$precision[i] <- (TP)/(TP+FP)  
+      dat$false_positive_rate[i] <- (FP)/(FP+TN)
+      dat$recall[i] <- (FP)/(FP+TN)
       #f1_score <- 2*((precision*recall_score)/(precision+recall_score))
-      #accuracy_model  <- (TP+TN)/(TP+TN+FP+FN)
+      dat$accuracy[i]  <- (TP+TN)/(TP+TN+FP+FN)
       #False_negative_rate <- (FN)/(FN+TP)
     }
-#    print(s[,c("false_positive_rate", "sensitivity")])
+    #    print(s[,c("false_positive_rate", "sensitivity")])
     
-    ref <- data.frame(false_positive_rate=c(0,1), sensitivity=c(0,1))
+    
+    
+    #print(dat)
+    dat
+
+  }
   
+
+  
+  
+  getCurrentSetting <- function(){
+    dat <- getSamples()
     
     ######## Figure out current setting
-    s$class <- factor(s$class, levels=c("a","b"))
-    s$predicted_class <- factor(s$predicted_class, levels=c("a","b"))
-    CM <- table(s$class, s$predicted_class)
+    CM <- table(dat$class, dat$predicted_class)
     TN <- CM[1,1]
     TP <- CM[2,2]
     FP <- CM[1,2]
@@ -171,16 +143,13 @@ server <- function(input, output, session) {
       cur_setting$sensitivity <- 0
     }
     cur_setting$false_positive_rate <- (FP)/(FP+TN)
-
     
-    ggplot(s, aes(false_positive_rate, sensitivity)) + geom_line() + 
-      geom_line(data=ref, color="red") + 
-      geom_point(data=cur_setting, color="red", size=5)
-  }
-  if(FALSE){
-    getRoc()
-  }
+    cur_setting$precision <- (TP)/(TP+FP)  
+    cur_setting$recall <- (FP)/(FP+TN)
     
+    cur_setting
+  }
+  
 
   
   ##############################################################################
@@ -207,10 +176,9 @@ server <- function(input, output, session) {
     
     alldat <- rbind(dat,dat_b)    
 
-    ggplot(alldat, aes(x,p, color=class)) + geom_line() +
-#      geom_area(data = dat[dat$in_integral,], fill="red") +
+    ggplot(alldat, aes(x,p, color=class)) + geom_area(data = dat[dat$in_integral,], fill="gray") +
+      geom_line(data=alldat, aes(x,p, color=class)) +
       annotate("segment", x = input$class_a_to, xend = input$class_a_to, y = 0, yend = max(alldat$p), colour = "blue")+
-    
       ylab("Probability density")+
       xlim(c(minx,maxx))
     
@@ -232,8 +200,6 @@ server <- function(input, output, session) {
   output$plotSamples <- renderPlot({
     dat <- getSamples()
     
-    print(dat)
-    
     ggplot(dat, aes(x,y,color=class)) + geom_point()+
       ylim(c(-1,1))+
       xlim(c(minx, maxx))
@@ -251,27 +217,42 @@ server <- function(input, output, session) {
     dat <- getSamples()
     
     
-    dat$class <- factor(dat$class, levels=c("a","b"))
-    dat$predicted_class <- factor(dat$predicted_class, levels=c("a","b"))
-    CM <- table(dat$class, dat$predicted_class)
-    
-    
+#    CM <- table(dat$class, dat$predicted_class)
 #    print(CM)
 #    err_metric(CM)
+
+    #dat$class <- as.numeric(dat$class)
+    #dat$predicted_class <- as.numeric(dat$predicted_class)
+
+    ref <- data.frame(false_positive_rate=c(0,1), sensitivity=c(0,1))
+    cur_setting <- getCurrentSetting()
     
-    
-    
-    dat$class <- as.numeric(dat$class)
-    dat$predicted_class <- as.numeric(dat$predicted_class)
-    
-    #ROC-curve using pROC library
-    #library(pROC)
-   # roc_score <- roc(dat$class, dat$predicted_class) #AUC score
-  #  plot(roc_score)# ,main ="ROC curve -- Logistic Regression ")
-    
-    
-    getRoc()
+    ggplot(dat, aes(false_positive_rate, sensitivity)) + geom_line() + 
+      geom_line(data=ref, color="red") + 
+      geom_point(data=cur_setting, color="red", size=5)
   })
+  
+  
+  
+  output$plotPR <- renderPlot({
+    dat <- getSamples()
+    
+    ref <- data.frame(recall=c(1,0), precision=c(0,1), false_positive_rate=c(0,1), sensitivity=c(0,1))
+    cur_setting <- getCurrentSetting()
+    
+    print(head(dat))
+    print(cur_setting)
+    
+    ggplot(dat, aes(recall, precision)) + geom_line() + 
+      geom_line(data=ref, color="red") + 
+      geom_point(data=cur_setting, color="red", size=5)
+  })
+  
+  
+  
+  if(FALSE){
+    getRoc()
+  }
   
 }
 
