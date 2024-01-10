@@ -116,10 +116,11 @@ tab_statdist <- fluidPage(
            
            h3("Classifier performance"),
            
+           
+           uiOutput(outputId = "textAUC"),
            plotOutput(outputId = "plotROC", height = "400px"),
            plotOutput(outputId = "plotPR", height = "400px"),
-           
-           
+
     ),
   )
 )

@@ -240,6 +240,17 @@ server <- function(input, output, session) {
   })
   
   
+  output$textAUC <- renderText({
+    
+    dat <- getSamples()
+    
+    dat <- dat[,c("false_positive_rate","sensitivity")]
+    dat <- dat[order(dat$false_positive_rate, decreasing = FALSE),]
+
+    auc <- pracma::trapz(dat$false_positive_rate, dat$sensitivity)
+
+    HTML(paste0("<b>","AUC: ",round(auc,digits = 3),"</b>"))
+  })
   
   
 }
