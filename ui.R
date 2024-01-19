@@ -100,6 +100,38 @@ tab_statdist <- fluidPage(
            plotOutput(outputId = "plotSamples", height = "200px"),
            
            
+           #######
+           #######
+           #######
+           
+           
+           numericInput(
+             inputId = "cost_TA",
+             label = "Cost of true A",
+             value = 0
+           ),
+
+           numericInput(
+             inputId = "cost_FA",
+             label = "Cost of false A",
+             value = 0
+           ),
+           
+           
+           
+           numericInput(
+             inputId = "cost_TB",
+             label = "Cost of true B",
+             value = 0
+           ),
+           
+           numericInput(
+             inputId = "cost_FB",
+             label = "Cost of false B",
+             value = 0
+           ),
+           
+           
     ),
     column(6,
            
@@ -120,6 +152,8 @@ tab_statdist <- fluidPage(
            uiOutput(outputId = "textAUC"),
            plotOutput(outputId = "plotROC", height = "400px"),
            plotOutput(outputId = "plotPR", height = "400px"),
+           plotOutput(outputId = "plotCost", height = "200px"),
+           
 
     ),
   )

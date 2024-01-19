@@ -18,4 +18,4 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           dockerfile: Dockerfile
-          tags: "20240117-151300"
+          tags: "20240119-164700"

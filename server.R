@@ -27,8 +27,8 @@ server <- function(input, output, session) {
   ########### Update controllers as needed #####################################
   ##############################################################################
 
-  observe({
-  })
+  #observe({
+  #})
   
     
   ##############################################################################
@@ -60,7 +60,6 @@ server <- function(input, output, session) {
     
     dat$class <- factor(dat$class, levels=c("a","b"))
     dat$predicted_class <- factor(dat$predicted_class, levels=c("a","b"))
-    
     
     ################ Add classification info
     
@@ -111,6 +110,13 @@ server <- function(input, output, session) {
     #f1_score <- 2*((precision*recall_score)/(precision+recall_score))
     dat$accuracy  <- (dat$TP+dat$TN)/(dat$TP+dat$TN+dat$FP+dat$FN)    
 
+    dat$cost <- 
+      input$cost_TB*dat$TP +  #should increase with boundary
+      input$cost_TA*dat$TN +  #should decrease with boundary
+      input$cost_FB*dat$FP +  #should decrease with boundary
+      input$cost_FA*dat$FN    #should increase with boundary
+
+    
     dat
   })
   
@@ -176,15 +182,30 @@ server <- function(input, output, session) {
       ylab("Probability density")+
       xlim(c(minx,maxx))
     
+    #p2 <-  ggplot(dat, aes(x,cost)) + geom_point()+
+    #  xlim(c(minx, maxx))
+    
+    
     
   })
   
   
-  #output$integral_value <- renderText({
-  #  p <- getDistCDF()(input$int_to) - getDistCDF()(input$int_from)
-  #  paste("Integral of area, the probability:",p)
-  #})
   
+  output$plotCost <- renderPlot({
+    dat <- getSamples()
+    
+    #add samples to show continuation of cost
+    first_samp <- dat[1,,drop=FALSE]
+    last_samp <- dat[nrow(dat),,drop=FALSE]
+    first_samp$x <- minx
+    last_samp$x  <- maxx
+    
+    ggplot(rbind(first_samp,dat,last_samp), aes(x,cost)) + geom_line()+
+      xlim(c(minx, maxx))+
+      ylim(c(min(dat$cost,0),max(dat$cost,0)))
+
+  })
+
   
   
   ##############################################################################
